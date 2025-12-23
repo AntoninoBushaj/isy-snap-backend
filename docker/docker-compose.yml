@@ -2,19 +2,19 @@ version: '3.8'
 
 services:
 
-  # Database MySQL per TableSnap Backend
-  mysql-tablesnap:
+  # Database MySQL per IsySnap Backend
+  mysql-isysnap:
     image: mysql:8.0.17
-    container_name: tablesnap_mysql
+    container_name: isysnap_mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tablesnap
+      MYSQL_DATABASE: isysnap
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - tablesnap-network
+      - isysnap-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -30,19 +30,19 @@ services:
 #      - "8080:8080"
 #    environment:
 #      SPRING_PROFILES_ACTIVE: docker
-#      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-tablesnap:3306/tablesnap
-#      SPRING_DATASOURCE_USERNAME: tablesnap_user
-#      SPRING_DATASOURCE_PASSWORD: tablesnap_password
+#      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-isysnap:3306/isysnap
+#      SPRING_DATASOURCE_USERNAME: isysnap_user
+#      SPRING_DATASOURCE_PASSWORD: isysnap_password
 #      SPRING_JPA_HIBERNATE_DDL_AUTO: update
 #    depends_on:
-#      mysql-tablesnap:
+#      mysql-isysnap:
 #        condition: service_healthy
 #    networks:
-#      - tablesnap-network
+#      - isysnap-network
 
 # Definizione dei volumi e network
 networks:
-  tablesnap-network:
+  isysnap-network:
     driver: bridge
 
 volumes:

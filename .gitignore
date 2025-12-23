@@ -49,3 +49,14 @@ logs/
 # Environment
 .env
 .env.local
+
+# Temporary test files
+BCryptTest.java
+test_bcrypt.java
+GenerateHash.java
+*_test.java
+create_*.sql
+insert_*.sql
+
+# Debug controllers (remove in production)
+src/main/java/com/tablesnap/controller/DebugController.java
