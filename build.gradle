@@ -7,8 +7,12 @@ plugins {
 group = 'com.isysnap'
 version = '0.1.0'
 
+//quando vorremmo modificare la versione di java con cui runna il progetto modifichiamo qui
+//al momento usiamo java 17
 java {
-    sourceCompatibility = '17'
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {

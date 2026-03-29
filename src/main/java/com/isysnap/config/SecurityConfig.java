@@ -74,7 +74,7 @@ public class SecurityConfig {
                         // Login is public (anyone can attempt login)
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         // Register requires authentication (ADMIN only - validated by @PreAuthorize)
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/registerUser").authenticated()
                         // Logout requires authentication (any authenticated user)
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
 
@@ -118,7 +118,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001", "http://localhost:5173"));
+
+        String allowedOriginsEnv = System.getenv("ALLOWED_ORIGINS");
+        if (allowedOriginsEnv != null && !allowedOriginsEnv.isBlank()) {
+            configuration.setAllowedOrigins(Arrays.asList(allowedOriginsEnv.split(",")));
+        } else {
+            configuration.setAllowedOrigins(Arrays.asList(
+                    "http://localhost:3000",
+                    "http://localhost:3001",
+                    "http://localhost:5173"
+            ));
+        }
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
