@@ -8,10 +8,10 @@ group = 'com.isysnap'
 version = '0.1.0'
 
 //quando vorremmo modificare la versione di java con cui runna il progetto modifichiamo qui
-//al momento usiamo java 17
+//al momento usiamo java 21
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
