@@ -4,7 +4,7 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "startCommand": "java $JAVA_OPTS -jar -Dserver.port=$PORT build/libs/$(ls build/libs/ | grep -v plain | grep .jar)",
+    "startCommand": "java $JAVA_OPTS -Dserver.port=$PORT -jar build/libs/$(ls build/libs/ | grep -v plain | grep .jar)",
     "runtime": "V2",
     "numReplicas": 1,
     "sleepApplication": false,
