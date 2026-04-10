@@ -1,12 +1,15 @@
 package com.isysnap.service;
 
+import com.isysnap.dto.UserDTO;
 import com.isysnap.dto.request.AuthRequest;
 import com.isysnap.dto.request.RegisterRequest;
+import com.isysnap.dto.request.UpdateUserRequest;
 import com.isysnap.dto.response.AuthResponse;
 import com.isysnap.entity.RestaurantUser;
 import com.isysnap.entity.Token;
 import com.isysnap.entity.User;
 import com.isysnap.exception.AuthenticationException;
+import com.isysnap.repository.RestaurantRepository;
 import com.isysnap.repository.RestaurantUserRepository;
 import com.isysnap.repository.TokenRepository;
 import com.isysnap.repository.UserRepository;
@@ -21,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RestaurantUserRepository restaurantUserRepository;
+    private final RestaurantRepository restaurantRepository;
     private final TokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -183,6 +188,95 @@ public class UserService {
     public User getUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new AuthenticationException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        log.info("Getting all users");
+        return userRepository.findAll().stream()
+                .map(user -> {
+                    UserDTO dto = UserDTO.fromEntity(user);
+                    // Attach restaurant info for STAFF users
+                    if (user.getRole() == User.UserRole.STAFF) {
+                        List<RestaurantUser> assignments = restaurantUserRepository.findActiveByUserId(user.getId());
+                        if (!assignments.isEmpty()) {
+                            dto.setRestaurantId(assignments.get(0).getRestaurant().getId());
+                            dto.setRestaurantName(assignments.get(0).getRestaurant().getName());
+                        }
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserDTOById(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthenticationException("User not found"));
+        UserDTO dto = UserDTO.fromEntity(user);
+        if (user.getRole() == User.UserRole.STAFF) {
+            List<RestaurantUser> assignments = restaurantUserRepository.findActiveByUserId(userId);
+            if (!assignments.isEmpty()) {
+                dto.setRestaurantId(assignments.get(0).getRestaurant().getId());
+                dto.setRestaurantName(assignments.get(0).getRestaurant().getName());
+            }
+        }
+        return dto;
+    }
+
+    @Transactional
+    public UserDTO updateUser(String userId, UpdateUserRequest request) {
+        log.info("Updating user: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthenticationException("User not found"));
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            if (!request.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
+                throw new AuthenticationException("Email already in use");
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        if (request.getRole() != null && !request.getRole().isBlank()) {
+            User.UserRole newRole;
+            try {
+                newRole = User.UserRole.valueOf(request.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new AuthenticationException("Invalid role: " + request.getRole());
+            }
+            // Prevent removing last ADMIN
+            if (user.getRole() == User.UserRole.ADMIN && newRole != User.UserRole.ADMIN) {
+                long adminCount = userRepository.countByRole(User.UserRole.ADMIN);
+                if (adminCount <= 1) {
+                    throw new AuthenticationException("Cannot change role of the last ADMIN");
+                }
+            }
+            user.setRole(newRole);
+        }
+
+        User saved = userRepository.save(user);
+        return UserDTO.fromEntity(saved);
+    }
+
+    @Transactional
+    public void deleteUser(String userId) {
+        log.info("Deleting user: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthenticationException("User not found"));
+
+        // Prevent deleting last ADMIN
+        if (user.getRole() == User.UserRole.ADMIN) {
+            long adminCount = userRepository.countByRole(User.UserRole.ADMIN);
+            if (adminCount <= 1) {
+                throw new AuthenticationException("Cannot delete the last ADMIN user");
+            }
+        }
+
+        // Invalidate all tokens
+        tokenRepository.invalidateAllUserTokens(userId);
+
+        userRepository.deleteById(userId);
+        log.info("User {} deleted successfully", userId);
     }
 
     private void saveUserToken(User user, String jwtToken) {

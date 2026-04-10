@@ -10,4 +10,6 @@ import java.util.List;
 public interface MenuItemOptionRepository extends JpaRepository<MenuItemOption, String> {
 
     List<MenuItemOption> findByMenuItemId(String menuItemId);
+
+    void deleteByMenuItemId(String menuItemId);
 }

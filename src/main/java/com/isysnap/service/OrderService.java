@@ -248,15 +248,12 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public List<OrderDTO> getConfirmedOrdersByGuest(String guestId) {
-        List<Order> allOrders = orderRepository.findAll();
-        return allOrders.stream()
+        // Use existing findByGuestId to avoid full table scan on orders
+        List<OrderItem> guestItems = orderItemRepository.findByGuestId(guestId);
+        return guestItems.stream()
+                .map(OrderItem::getOrder)
                 .filter(order -> !"PENDING".equals(order.getStatus()))
-                .filter(order -> {
-                    List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
-                    return items.stream()
-                            .anyMatch(item -> item.getGuest() != null &&
-                                    item.getGuest().getId().equals(guestId));
-                })
+                .distinct()
                 .map(OrderDTO::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -303,6 +300,18 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<OrderDTO> getSessionOrders(String sessionId) {
         List<Order> orders = orderRepository.findByDiningSessionId(sessionId);
+        return orders.stream()
+                .map(OrderDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all orders for a restaurant (all sessions)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderDTO> getRestaurantOrders(String restaurantId) {
+        log.info("Getting all orders for restaurant: {}", restaurantId);
+        List<Order> orders = orderRepository.findByDiningSessionRestaurantIdOrderByCreatedAtDesc(restaurantId);
         return orders.stream()
                 .map(OrderDTO::fromEntity)
                 .collect(Collectors.toList());

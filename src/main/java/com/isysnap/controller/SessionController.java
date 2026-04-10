@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/sessions")
@@ -48,5 +49,19 @@ public class SessionController {
     public ResponseEntity<SuccessResponse> closeSession(@PathVariable String sessionId) {
         sessionService.closeSession(sessionId);
         return ResponseEntity.ok(SuccessResponse.of(true));
+    }
+
+    @GetMapping("/getRestaurantSessions/{restaurantId}")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<List<SessionInfoResponse>> getRestaurantSessions(@PathVariable String restaurantId) {
+        List<SessionInfoResponse> sessions = sessionService.getSessionsByRestaurant(restaurantId);
+        return ResponseEntity.ok(sessions);
+    }
+
+    @GetMapping("/getAllActiveSessions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<SessionInfoResponse>> getAllActiveSessions() {
+        List<SessionInfoResponse> sessions = sessionService.getAllActiveSessions();
+        return ResponseEntity.ok(sessions);
     }
 }

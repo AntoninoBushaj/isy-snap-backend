@@ -5,10 +5,25 @@ import com.isysnap.dto.TableDTO;
 import com.isysnap.dto.request.CreateRestaurantRequest;
 import com.isysnap.dto.request.CreateTableRequest;
 import com.isysnap.dto.request.UpdateRestaurantRequest;
+import com.isysnap.entity.DiningSession;
+import com.isysnap.entity.MenuItem;
+import com.isysnap.entity.Order;
 import com.isysnap.entity.Restaurant;
 import com.isysnap.entity.RestaurantTable;
+import com.isysnap.repository.DiningSessionGuestRepository;
+import com.isysnap.repository.DiningSessionRepository;
+import com.isysnap.repository.MenuCategoryRepository;
+import com.isysnap.repository.MenuItemOptionRepository;
+import com.isysnap.repository.MenuItemRepository;
+import com.isysnap.repository.OrderItemOptionRepository;
+import com.isysnap.repository.OrderItemRepository;
+import com.isysnap.repository.OrderRepository;
+import com.isysnap.repository.OrderStatusHistoryRepository;
+import com.isysnap.repository.PaymentItemRepository;
+import com.isysnap.repository.PaymentRepository;
 import com.isysnap.repository.RestaurantRepository;
 import com.isysnap.repository.RestaurantTableRepository;
+import com.isysnap.repository.RestaurantUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +40,18 @@ public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantTableRepository restaurantTableRepository;
+    private final DiningSessionRepository diningSessionRepository;
+    private final DiningSessionGuestRepository diningSessionGuestRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderItemOptionRepository orderItemOptionRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentItemRepository paymentItemRepository;
+    private final MenuItemRepository menuItemRepository;
+    private final MenuItemOptionRepository menuItemOptionRepository;
+    private final MenuCategoryRepository menuCategoryRepository;
+    private final RestaurantUserRepository restaurantUserRepository;
 
     // ========== RESTAURANT CRUD ==========
 
@@ -98,14 +125,81 @@ public class RestaurantService {
 
     @Transactional
     public void deleteRestaurant(String restaurantId) {
-        log.info("Deleting restaurant: {}", restaurantId);
+        log.info("Deleting restaurant: {} — starting cascade cleanup", restaurantId);
 
-        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+        restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found: " + restaurantId));
 
-        restaurantRepository.delete(restaurant);
+        // 1. Get all sessions for this restaurant
+        List<DiningSession> sessions = diningSessionRepository.findByRestaurantIdOrderByOpenedAtDesc(restaurantId);
+        List<String> sessionIds = sessions.stream().map(DiningSession::getId).collect(Collectors.toList());
 
-        log.info("Deleted restaurant: {}", restaurantId);
+        if (!sessionIds.isEmpty()) {
+            // 2. Delete payment_items and payments first (PaymentItem has FK to OrderItem)
+            sessionIds.forEach(sid -> {
+                paymentRepository.findByDiningSessionId(sid).forEach(payment -> {
+                    paymentItemRepository.findByPaymentId(payment.getId())
+                            .forEach(paymentItemRepository::delete);
+                    paymentRepository.delete(payment);
+                });
+            });
+
+            // 3. Get all orders for these sessions
+            List<Order> orders = sessionIds.stream()
+                    .flatMap(sid -> orderRepository.findByDiningSessionId(sid).stream())
+                    .collect(Collectors.toList());
+            List<String> orderIds = orders.stream().map(Order::getId).collect(Collectors.toList());
+
+            if (!orderIds.isEmpty()) {
+                // 4. Delete order_item_options
+                orderIds.forEach(orderId ->
+                        orderItemOptionRepository.deleteByOrderItemOrderId(orderId));
+
+                // 5. Delete order_status_history
+                orderIds.forEach(orderId ->
+                        orderStatusHistoryRepository.deleteByOrderId(orderId));
+
+                // 6. Delete order_items
+                orderIds.forEach(orderId ->
+                        orderItemRepository.findByOrderId(orderId)
+                                .forEach(orderItemRepository::delete));
+
+                // 7. Delete orders
+                orders.forEach(orderRepository::delete);
+            }
+
+            // 8. Delete dining session guests
+            sessionIds.forEach(sid ->
+                    diningSessionGuestRepository.findByDiningSessionId(sid)
+                            .forEach(diningSessionGuestRepository::delete));
+
+            // 9. Delete dining sessions
+            sessions.forEach(diningSessionRepository::delete);
+        }
+
+        // 11. Delete menu item options and menu items
+        List<MenuItem> menuItems = menuItemRepository.findByRestaurantId(restaurantId);
+        menuItems.forEach(item -> {
+            menuItemOptionRepository.deleteByMenuItemId(item.getId());
+            menuItemRepository.delete(item);
+        });
+
+        // 12. Delete menu categories
+        menuCategoryRepository.findByRestaurantIdOrderBySortOrderAsc(restaurantId)
+                .forEach(menuCategoryRepository::delete);
+
+        // 13. Delete restaurant tables
+        restaurantTableRepository.findByRestaurantId(restaurantId)
+                .forEach(restaurantTableRepository::delete);
+
+        // 14. Delete restaurant user assignments
+        restaurantUserRepository.findActiveByRestaurantId(restaurantId)
+                .forEach(restaurantUserRepository::delete);
+
+        // 15. Delete the restaurant itself
+        restaurantRepository.deleteById(restaurantId);
+
+        log.info("Deleted restaurant: {} and all associated data", restaurantId);
     }
 
     // ========== TABLE MANAGEMENT (Parent-Child) ==========

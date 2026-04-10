@@ -221,6 +221,15 @@ public class OrderController {
                 .collect(Collectors.toList()));
     }
 
+    @GetMapping("/getRestaurantOrders/{restaurantId}")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @Operation(summary = "Get all orders for a restaurant", description = "STAFF/ADMIN: View all orders across all sessions for a restaurant")
+    public ResponseEntity<List<OrderDTO>> getRestaurantOrders(@PathVariable String restaurantId) {
+        log.info("Getting all orders for restaurant: {}", restaurantId);
+        List<OrderDTO> orders = orderService.getRestaurantOrders(restaurantId);
+        return ResponseEntity.ok(orders);
+    }
+
     @PatchMapping("/updateOrderStatus/{orderId}")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @Operation(summary = "Update order status", description = "STAFF: Mark order as PREPARING, READY, etc.")

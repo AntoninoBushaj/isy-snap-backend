@@ -12,4 +12,5 @@ public class SessionInfoResponse {
     private String tableCode;
     private String restaurantName;
     private Instant openedAt;
+    private Integer guestCount;
 }

@@ -10,4 +10,6 @@ import java.util.List;
 public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, String> {
 
     List<OrderStatusHistory> findByOrderIdOrderByTimestampAsc(String orderId);
+
+    void deleteByOrderId(String orderId);
 }

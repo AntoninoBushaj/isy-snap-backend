@@ -2,6 +2,7 @@ package com.isysnap.service;
 
 import com.isysnap.dto.DiningSessionDTO;
 import com.isysnap.dto.DiningSessionGuestDTO;
+import com.isysnap.dto.response.SessionInfoResponse;
 import com.isysnap.entity.DiningSession;
 import com.isysnap.entity.DiningSessionGuest;
 import com.isysnap.entity.RestaurantTable;
@@ -162,6 +163,44 @@ public class DiningSessionService {
         List<DiningSessionGuest> guests = guestRepository.findByDiningSessionId(sessionId);
         return guests.stream()
                 .map(DiningSessionGuestDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all sessions for a specific restaurant (all statuses, ordered by most recent)
+     */
+    @Transactional(readOnly = true)
+    public List<SessionInfoResponse> getSessionsByRestaurant(String restaurantId) {
+        log.info("Getting sessions for restaurant: {}", restaurantId);
+        List<DiningSession> sessions = diningSessionRepository.findByRestaurantIdOrderByOpenedAtDesc(restaurantId);
+        return sessions.stream()
+                .map(session -> SessionInfoResponse.builder()
+                        .id(session.getId())
+                        .status(session.getStatus())
+                        .tableCode(session.getTable() != null ? session.getTable().getCode() : "--")
+                        .restaurantName(session.getRestaurant() != null ? session.getRestaurant().getName() : "--")
+                        .openedAt(session.getOpenedAt())
+                        .guestCount(guestRepository.countByDiningSessionId(session.getId()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all currently active/idle sessions (ADMIN overview)
+     */
+    @Transactional(readOnly = true)
+    public List<SessionInfoResponse> getAllActiveSessions() {
+        log.info("Getting all active sessions");
+        List<DiningSession> sessions = diningSessionRepository.findByStatusIn(List.of("IDLE", "ACTIVE"));
+        return sessions.stream()
+                .map(session -> SessionInfoResponse.builder()
+                        .id(session.getId())
+                        .status(session.getStatus())
+                        .tableCode(session.getTable() != null ? session.getTable().getCode() : "--")
+                        .restaurantName(session.getRestaurant() != null ? session.getRestaurant().getName() : "--")
+                        .openedAt(session.getOpenedAt())
+                        .guestCount(guestRepository.countByDiningSessionId(session.getId()))
+                        .build())
                 .collect(Collectors.toList());
     }
 }

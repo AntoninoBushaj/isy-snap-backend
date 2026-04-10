@@ -12,6 +12,8 @@ public interface DiningSessionRepository extends JpaRepository<DiningSession, St
 
     List<DiningSession> findByRestaurantIdAndStatus(String restaurantId, String status);
 
+    List<DiningSession> findByRestaurantIdOrderByOpenedAtDesc(String restaurantId);
+
     List<DiningSession> findByTableIdAndStatus(String tableId, String status);
 
     List<DiningSession> findByTableIdAndStatusIn(String tableId, List<String> statuses);

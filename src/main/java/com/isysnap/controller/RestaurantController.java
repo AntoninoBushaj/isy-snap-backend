@@ -86,4 +86,12 @@ public class RestaurantController {
         restaurantService.deleteTable(tableId);
         return ResponseEntity.ok(SuccessResponse.of(true));
     }
+
+    @DeleteMapping("/deleteRestaurant/{restaurantId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete restaurant", description = "ADMIN: Delete restaurant and all associated data")
+    public ResponseEntity<SuccessResponse> deleteRestaurant(@PathVariable String restaurantId) {
+        restaurantService.deleteRestaurant(restaurantId);
+        return ResponseEntity.ok(SuccessResponse.of(true));
+    }
 }

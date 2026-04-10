@@ -18,6 +18,7 @@ public class MenuItemDTO {
     private String id;
     private String restaurantId;  // Solo ID, NO oggetto Restaurant nested
     private String categoryId;    // Solo ID, NO oggetto MenuCategory nested
+    private String categoryName;  // Nome categoria per display
     private String name;
     private String description;
     private BigDecimal price;
@@ -35,6 +36,7 @@ public class MenuItemDTO {
                 .id(entity.getId())
                 .restaurantId(entity.getRestaurant() != null ? entity.getRestaurant().getId() : null)
                 .categoryId(entity.getCategory() != null ? entity.getCategory().getId() : null)
+                .categoryName(entity.getCategory() != null ? entity.getCategory().getName() : null)
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .price(entity.getPrice())

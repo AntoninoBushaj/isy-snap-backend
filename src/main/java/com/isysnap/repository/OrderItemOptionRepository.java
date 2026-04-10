@@ -12,4 +12,6 @@ public interface OrderItemOptionRepository extends JpaRepository<OrderItemOption
     List<OrderItemOption> findByOrderItemId(String orderItemId);
 
     void deleteByOrderItemId(String orderItemId);
+
+    void deleteByOrderItemOrderId(String orderId);
 }
