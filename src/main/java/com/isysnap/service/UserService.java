@@ -69,12 +69,28 @@ public class UserService {
         User savedUser = userRepository.save(user);
         log.info("User registered successfully: {} with role: {}", savedUser.getId(), savedUser.getRole());
 
-        // Genera token JWT con restaurantId vuoto (verrà impostato al login se STAFF)
+        // Se STAFF e restaurantId fornito, crea l'associazione restaurant_user
+        String assignedRestaurantId = "";
+        if (role == User.UserRole.STAFF && request.getRestaurantId() != null && !request.getRestaurantId().isBlank()) {
+            var restaurant = restaurantRepository.findById(request.getRestaurantId())
+                    .orElseThrow(() -> new AuthenticationException("Restaurant not found: " + request.getRestaurantId()));
+
+            RestaurantUser restaurantUser = RestaurantUser.builder()
+                    .restaurant(restaurant)
+                    .user(savedUser)
+                    .role(RestaurantUser.UserRestaurantRole.STAFF)
+                    .build();
+            restaurantUserRepository.save(restaurantUser);
+            assignedRestaurantId = restaurant.getId();
+            log.info("Assigned user {} to restaurant {}", savedUser.getId(), assignedRestaurantId);
+        }
+
+        // Genera token JWT
         String jwtToken = jwtTokenProvider.generateToken(
                 savedUser.getId(),
                 savedUser.getEmail(),
                 savedUser.getRole().name(),
-                "" // Default empty restaurant ID for now
+                assignedRestaurantId
         );
 
         // Salva token nel database
@@ -255,7 +271,41 @@ public class UserService {
         }
 
         User saved = userRepository.save(user);
-        return UserDTO.fromEntity(saved);
+
+        // Gestisci associazione restaurant_user
+        if (request.getRestaurantId() != null) {
+            // Rimuovi associazioni precedenti (soft delete)
+            List<RestaurantUser> existingAssignments = restaurantUserRepository.findActiveByUserId(userId);
+            existingAssignments.forEach(ru -> {
+                ru.setRemovedAt(java.time.Instant.now());
+                restaurantUserRepository.save(ru);
+            });
+
+            // Se restaurantId non è vuoto, crea la nuova associazione
+            if (!request.getRestaurantId().isBlank()) {
+                var restaurant = restaurantRepository.findById(request.getRestaurantId())
+                        .orElseThrow(() -> new AuthenticationException("Restaurant not found: " + request.getRestaurantId()));
+
+                RestaurantUser restaurantUser = RestaurantUser.builder()
+                        .restaurant(restaurant)
+                        .user(saved)
+                        .role(RestaurantUser.UserRestaurantRole.STAFF)
+                        .build();
+                restaurantUserRepository.save(restaurantUser);
+                log.info("Updated user {} restaurant assignment to {}", userId, request.getRestaurantId());
+            }
+        }
+
+        UserDTO dto = UserDTO.fromEntity(saved);
+        // Popola info ristorante nel DTO
+        if (saved.getRole() == User.UserRole.STAFF) {
+            List<RestaurantUser> assignments = restaurantUserRepository.findActiveByUserId(userId);
+            if (!assignments.isEmpty()) {
+                dto.setRestaurantId(assignments.get(0).getRestaurant().getId());
+                dto.setRestaurantName(assignments.get(0).getRestaurant().getName());
+            }
+        }
+        return dto;
     }
 
     @Transactional

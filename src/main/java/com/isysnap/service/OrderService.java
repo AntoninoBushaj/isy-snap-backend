@@ -328,6 +328,32 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Delete an order and all associated data (cascade)
+     */
+    @Transactional
+    public void deleteOrder(String orderId) {
+        log.info("Deleting order: {} — starting cascade cleanup", orderId);
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+
+        // 1. Delete order_item_options for all items in this order
+        orderItemOptionRepository.deleteByOrderItemOrderId(orderId);
+
+        // 2. Delete order_status_history
+        orderStatusHistoryRepository.deleteByOrderId(orderId);
+
+        // 3. Delete order_items
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        items.forEach(orderItemRepository::delete);
+
+        // 4. Delete the order itself
+        orderRepository.delete(order);
+
+        log.info("Deleted order: {} and all associated data", orderId);
+    }
+
     private void updateOrderTotal(Order order) {
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
 

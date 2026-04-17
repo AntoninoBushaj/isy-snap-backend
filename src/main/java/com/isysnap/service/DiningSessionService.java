@@ -5,9 +5,16 @@ import com.isysnap.dto.DiningSessionGuestDTO;
 import com.isysnap.dto.response.SessionInfoResponse;
 import com.isysnap.entity.DiningSession;
 import com.isysnap.entity.DiningSessionGuest;
+import com.isysnap.entity.Order;
 import com.isysnap.entity.RestaurantTable;
 import com.isysnap.repository.DiningSessionGuestRepository;
 import com.isysnap.repository.DiningSessionRepository;
+import com.isysnap.repository.OrderItemOptionRepository;
+import com.isysnap.repository.OrderItemRepository;
+import com.isysnap.repository.OrderRepository;
+import com.isysnap.repository.OrderStatusHistoryRepository;
+import com.isysnap.repository.PaymentItemRepository;
+import com.isysnap.repository.PaymentRepository;
 import com.isysnap.repository.RestaurantTableRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +35,12 @@ public class DiningSessionService {
     private final DiningSessionRepository diningSessionRepository;
     private final DiningSessionGuestRepository guestRepository;
     private final RestaurantTableRepository tableRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderItemOptionRepository orderItemOptionRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final PaymentRepository paymentRepository;
+    private final PaymentItemRepository paymentItemRepository;
 
     /**
      * Create a new guest for a session.
@@ -153,6 +166,43 @@ public class DiningSessionService {
             diningSessionRepository.save(session);
             log.info("Closed session: {}", sessionId);
         });
+    }
+
+    /**
+     * Delete a session and all associated data (cascade)
+     */
+    @Transactional
+    public void deleteSession(String sessionId) {
+        log.info("Deleting session: {} — starting cascade cleanup", sessionId);
+
+        DiningSession session = diningSessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
+
+        // 1. Delete payment_items and payments
+        paymentRepository.findByDiningSessionId(sessionId).forEach(payment -> {
+            paymentItemRepository.findByPaymentId(payment.getId())
+                    .forEach(paymentItemRepository::delete);
+            paymentRepository.delete(payment);
+        });
+
+        // 2. Delete orders and their children
+        List<Order> orders = orderRepository.findByDiningSessionId(sessionId);
+        orders.forEach(order -> {
+            orderItemOptionRepository.deleteByOrderItemOrderId(order.getId());
+            orderStatusHistoryRepository.deleteByOrderId(order.getId());
+            orderItemRepository.findByOrderId(order.getId())
+                    .forEach(orderItemRepository::delete);
+            orderRepository.delete(order);
+        });
+
+        // 3. Delete guests
+        guestRepository.findByDiningSessionId(sessionId)
+                .forEach(guestRepository::delete);
+
+        // 4. Delete session
+        diningSessionRepository.delete(session);
+
+        log.info("Deleted session: {} and all associated data", sessionId);
     }
 
     /**

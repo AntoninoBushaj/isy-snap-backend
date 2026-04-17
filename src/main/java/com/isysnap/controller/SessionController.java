@@ -51,6 +51,13 @@ public class SessionController {
         return ResponseEntity.ok(SuccessResponse.of(true));
     }
 
+    @DeleteMapping("/deleteSession/{sessionId}")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    public ResponseEntity<SuccessResponse> deleteSession(@PathVariable String sessionId) {
+        sessionService.deleteSession(sessionId);
+        return ResponseEntity.ok(SuccessResponse.of(true));
+    }
+
     @GetMapping("/getRestaurantSessions/{restaurantId}")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<List<SessionInfoResponse>> getRestaurantSessions(@PathVariable String restaurantId) {

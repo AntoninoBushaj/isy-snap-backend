@@ -230,6 +230,15 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
+    @DeleteMapping("/deleteOrder/{orderId}")
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @Operation(summary = "Delete order", description = "STAFF/ADMIN: Delete an order and all associated data")
+    public ResponseEntity<SuccessResponse> deleteOrder(@PathVariable String orderId) {
+        log.info("Deleting order: {}", orderId);
+        orderService.deleteOrder(orderId);
+        return ResponseEntity.ok(SuccessResponse.of(true));
+    }
+
     @PatchMapping("/updateOrderStatus/{orderId}")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @Operation(summary = "Update order status", description = "STAFF: Mark order as PREPARING, READY, etc.")
