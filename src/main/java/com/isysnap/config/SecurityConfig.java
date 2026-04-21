@@ -1,6 +1,9 @@
 package com.isysnap.config;
 
+import com.isysnap.security.CustomAccessDeniedHandler;
+import com.isysnap.security.CustomAuthenticationEntryPoint;
 import com.isysnap.security.JwtAuthenticationFilter;
+import com.isysnap.security.RateLimitingFilter;
 import com.isysnap.security.SessionGuestAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +36,10 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final SessionGuestAuthenticationFilter sessionGuestAuthenticationFilter;
+    private final RateLimitingFilter rateLimitingFilter;
     private final UserDetailsService userDetailsService;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -78,9 +84,6 @@ public class SecurityConfig {
                         // Logout requires authentication (any authenticated user)
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
 
-                        // ========== DEV UTILS (TEMPORARY - Remove in production) ==========
-                        .requestMatchers("/api/dev/**").permitAll()  // Development utilities
-
                         // ========== QR CODE FLOW (Public - No Authentication) ==========
                         // QR code authorization
                         .requestMatchers(HttpMethod.POST, "/api/qr/authorizeQr").permitAll()  // QR code authorization
@@ -89,26 +92,35 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/sessions/startSession").permitAll()  // Start session for guests (QR code)
                         .requestMatchers(HttpMethod.GET, "/api/sessions/getSession/**").permitAll()  // Get session info
 
-                        // Menu viewing
-                        .requestMatchers(HttpMethod.GET, "/api/menu/getRestaurantMenu/**").permitAll()  // View restaurant menus (QR code)
-                        .requestMatchers(HttpMethod.GET, "/api/menu/getMenuCategories/**").permitAll()  // Get menu categories
+                        // Restaurant info (public — needed after QR scan)
+                        .requestMatchers(HttpMethod.GET, "/api/restaurants/getRestaurantInfo/**").permitAll()
 
-                        // Order management (cart)
-                        .requestMatchers(HttpMethod.POST, "/api/orders/addItemToCart").permitAll()  // Add items to cart
-                        .requestMatchers(HttpMethod.PATCH, "/api/orders/updateCartItem/**").permitAll()  // Update cart items
-                        .requestMatchers(HttpMethod.DELETE, "/api/orders/removeCartItem/**").permitAll()  // Remove cart items
-                        .requestMatchers(HttpMethod.GET, "/api/orders/getCart").permitAll()  // View cart
-                        .requestMatchers(HttpMethod.GET, "/api/orders/getOrderHistory").permitAll()  // View order history
+                        // Menu viewing (all public — guests need to browse before ordering)
+                        .requestMatchers(HttpMethod.GET, "/api/menu/getRestaurantMenu/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/menu/getMenuByCategory/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/menu/getMenuCategories/**").permitAll()
 
-                        // Payment processing
-                        .requestMatchers(HttpMethod.POST, "/api/payments/createCheckout").permitAll()  // Create checkout
-                        .requestMatchers(HttpMethod.GET, "/api/payments/getPaymentStatus/**").permitAll()  // Check payment status
-                        .requestMatchers(HttpMethod.POST, "/api/payments/processWebhook/**").permitAll()  // Payment webhooks
-                        .requestMatchers(HttpMethod.POST, "/api/payments/confirmPayment/**").permitAll()  // Manual confirmation (testing)
+                        // Order management (cart) — requires valid guest session JWT (ROLE_GUEST)
+                        .requestMatchers(HttpMethod.POST, "/api/orders/addItemToCart").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/updateCartItem/**").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.DELETE, "/api/orders/removeCartItem/**").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/getCart").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.GET, "/api/orders/getOrderHistory").hasRole("GUEST")
+
+                        // Payment processing — checkout requires guest session JWT; webhooks are public (machine-to-machine)
+                        .requestMatchers(HttpMethod.POST, "/api/payments/createCheckout").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.GET, "/api/payments/getPaymentStatus/**").hasRole("GUEST")
+                        .requestMatchers(HttpMethod.POST, "/api/payments/processWebhook/**").permitAll()  // Payment provider webhooks (no user auth)
+                        .requestMatchers(HttpMethod.POST, "/api/payments/confirmPayment/**").permitAll()  // Manual confirmation (testing only)
 
                         // ========== ALL OTHER ENDPOINTS (Authenticated with specific roles) ==========
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
+                )
+                .addFilterBefore(rateLimitingFilter, JwtAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(sessionGuestAuthenticationFilter, JwtAuthenticationFilter.class);
 
@@ -131,7 +143,10 @@ public class SecurityConfig {
         }
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization", "Content-Type", "Accept", "Origin",
+                "X-Requested-With", "Cache-Control"
+        ));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
 

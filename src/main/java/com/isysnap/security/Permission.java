@@ -7,21 +7,40 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Permission {
 
-    // Admin permissions
-    ADMIN_READ("admin:read"),
-    ADMIN_CREATE("admin:create"),
-    ADMIN_UPDATE("admin:update"),
-    ADMIN_DELETE("admin:delete"),
+    // ── User management (ADMIN only) ──────────────────────────────────────────
+    USER_READ("user:read"),
+    USER_CREATE("user:create"),
+    USER_UPDATE("user:update"),
+    USER_DELETE("user:delete"),
 
-    // Staff permissions
-    STAFF_READ("staff:read"),
-    STAFF_CREATE("staff:create"),
-    STAFF_UPDATE("staff:update"),
-    STAFF_DELETE("staff:delete"),
+    // ── Restaurant management ─────────────────────────────────────────────────
+    RESTAURANT_READ("restaurant:read"),
+    RESTAURANT_CREATE("restaurant:create"),
+    RESTAURANT_UPDATE("restaurant:update"),
+    RESTAURANT_DELETE("restaurant:delete"),
 
-    // Customer permissions
-    CUSTOMER_READ("customer:read"),
-    CUSTOMER_CREATE("customer:create");
+    // ── Menu management ───────────────────────────────────────────────────────
+    MENU_READ("menu:read"),
+    MENU_CREATE("menu:create"),
+    MENU_UPDATE("menu:update"),
+    MENU_DELETE("menu:delete"),
+
+    // ── Order management ──────────────────────────────────────────────────────
+    ORDER_READ("order:read"),
+    ORDER_CREATE("order:create"),
+    ORDER_UPDATE("order:update"),
+    ORDER_DELETE("order:delete"),
+
+    // ── Session management ────────────────────────────────────────────────────
+    SESSION_READ("session:read"),
+    SESSION_CREATE("session:create"),
+    SESSION_UPDATE("session:update"),
+    SESSION_DELETE("session:delete"),
+
+    // ── Payment management ────────────────────────────────────────────────────
+    PAYMENT_READ("payment:read"),
+    PAYMENT_CREATE("payment:create"),
+    PAYMENT_REFUND("payment:refund");
 
     private final String permission;
 }

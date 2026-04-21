@@ -65,27 +65,41 @@ public class User {
 
     public enum UserRole {
         ADMIN(Set.of(
-                Permission.ADMIN_READ,
-                Permission.ADMIN_CREATE,
-                Permission.ADMIN_UPDATE,
-                Permission.ADMIN_DELETE,
-                Permission.STAFF_READ,
-                Permission.STAFF_CREATE,
-                Permission.STAFF_UPDATE,
-                Permission.STAFF_DELETE,
-                Permission.CUSTOMER_READ,
-                Permission.CUSTOMER_CREATE
+                // Full user management
+                Permission.USER_READ, Permission.USER_CREATE,
+                Permission.USER_UPDATE, Permission.USER_DELETE,
+                // Full restaurant management
+                Permission.RESTAURANT_READ, Permission.RESTAURANT_CREATE,
+                Permission.RESTAURANT_UPDATE, Permission.RESTAURANT_DELETE,
+                // Full menu management
+                Permission.MENU_READ, Permission.MENU_CREATE,
+                Permission.MENU_UPDATE, Permission.MENU_DELETE,
+                // Full order management
+                Permission.ORDER_READ, Permission.ORDER_CREATE,
+                Permission.ORDER_UPDATE, Permission.ORDER_DELETE,
+                // Full session management
+                Permission.SESSION_READ, Permission.SESSION_CREATE,
+                Permission.SESSION_UPDATE, Permission.SESSION_DELETE,
+                // Full payment management (including refunds)
+                Permission.PAYMENT_READ, Permission.PAYMENT_CREATE,
+                Permission.PAYMENT_REFUND
         )),
         STAFF(Set.of(
-                Permission.STAFF_READ,
-                Permission.STAFF_CREATE,
-                Permission.STAFF_UPDATE,
-                Permission.STAFF_DELETE,
-                Permission.CUSTOMER_READ
+                // Restaurant: read + update only (no create/delete)
+                Permission.RESTAURANT_READ, Permission.RESTAURANT_UPDATE,
+                // Menu: read, create, update (no delete — only ADMIN can remove items permanently)
+                Permission.MENU_READ, Permission.MENU_CREATE, Permission.MENU_UPDATE,
+                // Full order management
+                Permission.ORDER_READ, Permission.ORDER_CREATE,
+                Permission.ORDER_UPDATE, Permission.ORDER_DELETE,
+                // Session: read + update (can close sessions, cannot delete)
+                Permission.SESSION_READ, Permission.SESSION_UPDATE,
+                // Payment: read only
+                Permission.PAYMENT_READ
         )),
         CUSTOMER(Set.of(
-                Permission.CUSTOMER_READ,
-                Permission.CUSTOMER_CREATE
+                // Customers only read menu; orders/payments handled via guest session JWT
+                Permission.MENU_READ
         ));
 
         private final Set<Permission> permissions;

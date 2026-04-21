@@ -23,7 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/getAll")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:read')")
     @Operation(
         summary = "Get all users",
         description = "ADMIN: Get all registered users",
@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:read')")
     @Operation(
         summary = "Get user by ID",
         description = "ADMIN: Get a specific user by ID",
@@ -45,7 +45,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:update')")
     @Operation(
         summary = "Update user",
         description = "ADMIN: Update user role or email",
@@ -58,7 +58,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:delete')")
     @Operation(
         summary = "Delete user",
         description = "ADMIN: Delete a user. Cannot delete the last ADMIN.",

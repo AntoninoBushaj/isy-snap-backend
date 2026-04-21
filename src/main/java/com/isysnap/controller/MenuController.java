@@ -53,16 +53,16 @@ public class MenuController {
     // STAFF APIs
 
     @PostMapping("/createMenuItem")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Create menu item", description = "STAFF: Add new menu item")
+    @PreAuthorize("hasAuthority('menu:create')")
+    @Operation(summary = "Create menu item", description = "STAFF/ADMIN: Add new menu item")
     public ResponseEntity<MenuItemDTO> createMenuItem(@RequestBody CreateMenuItemRequest request) {
         MenuItemDTO menuItem = menuService.createMenuItem(request);
         return ResponseEntity.ok(menuItem);
     }
 
     @PatchMapping("/updateMenuItem/{itemId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Update menu item", description = "STAFF: Update menu item details")
+    @PreAuthorize("hasAuthority('menu:update')")
+    @Operation(summary = "Update menu item", description = "STAFF/ADMIN: Update menu item details")
     public ResponseEntity<MenuItemDTO> updateMenuItem(
             @PathVariable String itemId,
             @RequestBody UpdateMenuItemRequest request) {
@@ -72,8 +72,8 @@ public class MenuController {
     }
 
     @PatchMapping("/updateMenuItemAvailability/{itemId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Update item availability", description = "STAFF: Toggle menu item availability")
+    @PreAuthorize("hasAuthority('menu:update')")
+    @Operation(summary = "Update item availability", description = "STAFF/ADMIN: Toggle menu item availability")
     public ResponseEntity<SuccessResponse> updateAvailability(
             @PathVariable String itemId,
             @RequestBody UpdateAvailabilityRequest request) {
@@ -83,7 +83,7 @@ public class MenuController {
     }
 
     @DeleteMapping("/deleteMenuItem/{itemId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('menu:delete')")
     @Operation(summary = "Delete menu item", description = "ADMIN: Delete menu item")
     public ResponseEntity<SuccessResponse> deleteMenuItem(@PathVariable String itemId) {
         menuService.deleteMenuItem(itemId);

@@ -34,7 +34,7 @@ public class RestaurantController {
     }
 
     @GetMapping("/getAllRestaurants")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('restaurant:read') and hasAuthority('user:read')")
     @Operation(summary = "List all restaurants", description = "ADMIN: Get all restaurants")
     public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
         List<RestaurantDTO> restaurants = restaurantService.getAllRestaurants();
@@ -42,7 +42,7 @@ public class RestaurantController {
     }
 
     @PostMapping("/createRestaurant")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('restaurant:create')")
     @Operation(summary = "Create restaurant", description = "ADMIN: Create new restaurant")
     public ResponseEntity<RestaurantDTO> createRestaurant(@RequestBody CreateRestaurantRequest request) {
         RestaurantDTO restaurant = restaurantService.createRestaurant(request);
@@ -50,8 +50,8 @@ public class RestaurantController {
     }
 
     @PatchMapping("/updateRestaurant/{restaurantId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Update restaurant", description = "STAFF: Update restaurant details")
+    @PreAuthorize("hasAuthority('restaurant:update') and @restaurantAccessValidator.hasAccessToRestaurant(#restaurantId)")
+    @Operation(summary = "Update restaurant", description = "STAFF/ADMIN: Update restaurant details")
     public ResponseEntity<RestaurantDTO> updateRestaurant(
             @PathVariable String restaurantId,
             @RequestBody UpdateRestaurantRequest request) {
@@ -61,16 +61,16 @@ public class RestaurantController {
     }
 
     @GetMapping("/getRestaurantTables/{restaurantId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Get restaurant tables", description = "STAFF: List all tables for restaurant")
+    @PreAuthorize("hasAuthority('restaurant:read') and @restaurantAccessValidator.hasAccessToRestaurant(#restaurantId)")
+    @Operation(summary = "Get restaurant tables", description = "STAFF/ADMIN: List all tables for restaurant")
     public ResponseEntity<List<TableDTO>> getRestaurantTables(@PathVariable String restaurantId) {
         List<TableDTO> tables = restaurantService.getRestaurantTables(restaurantId);
         return ResponseEntity.ok(tables);
     }
 
     @PostMapping("/createTable/{restaurantId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Create table", description = "STAFF: Add new table to restaurant")
+    @PreAuthorize("hasAuthority('restaurant:update') and @restaurantAccessValidator.hasAccessToRestaurant(#restaurantId)")
+    @Operation(summary = "Create table", description = "STAFF/ADMIN: Add new table to restaurant")
     public ResponseEntity<TableDTO> createTable(
             @PathVariable String restaurantId,
             @RequestBody CreateTableRequest request) {
@@ -80,7 +80,7 @@ public class RestaurantController {
     }
 
     @DeleteMapping("/deleteTable/{tableId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('restaurant:delete')")
     @Operation(summary = "Delete table", description = "ADMIN: Delete table")
     public ResponseEntity<SuccessResponse> deleteTable(@PathVariable String tableId) {
         restaurantService.deleteTable(tableId);
@@ -88,7 +88,7 @@ public class RestaurantController {
     }
 
     @DeleteMapping("/deleteRestaurant/{restaurantId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('restaurant:delete')")
     @Operation(summary = "Delete restaurant", description = "ADMIN: Delete restaurant and all associated data")
     public ResponseEntity<SuccessResponse> deleteRestaurant(@PathVariable String restaurantId) {
         restaurantService.deleteRestaurant(restaurantId);

@@ -188,8 +188,8 @@ public class OrderController {
     // STAFF APIs
 
     @GetMapping("/getSessionOrders/{sessionId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Get all orders for session", description = "STAFF: View all orders at a table")
+    @PreAuthorize("hasAuthority('order:read')")
+    @Operation(summary = "Get all orders for session", description = "STAFF/ADMIN: View all orders at a table")
     public ResponseEntity<List<CartResponse>> getSessionOrders(@PathVariable String sessionId) {
         log.info("Getting all orders for session: {}", sessionId);
 
@@ -222,7 +222,7 @@ public class OrderController {
     }
 
     @GetMapping("/getRestaurantOrders/{restaurantId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasAuthority('order:read') and @restaurantAccessValidator.hasAccessToRestaurant(#restaurantId)")
     @Operation(summary = "Get all orders for a restaurant", description = "STAFF/ADMIN: View all orders across all sessions for a restaurant")
     public ResponseEntity<List<OrderDTO>> getRestaurantOrders(@PathVariable String restaurantId) {
         log.info("Getting all orders for restaurant: {}", restaurantId);
@@ -231,7 +231,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/deleteOrder/{orderId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasAuthority('order:delete')")
     @Operation(summary = "Delete order", description = "STAFF/ADMIN: Delete an order and all associated data")
     public ResponseEntity<SuccessResponse> deleteOrder(@PathVariable String orderId) {
         log.info("Deleting order: {}", orderId);
@@ -240,8 +240,8 @@ public class OrderController {
     }
 
     @PatchMapping("/updateOrderStatus/{orderId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    @Operation(summary = "Update order status", description = "STAFF: Mark order as PREPARING, READY, etc.")
+    @PreAuthorize("hasAuthority('order:update')")
+    @Operation(summary = "Update order status", description = "STAFF/ADMIN: Mark order as PREPARING, READY, etc.")
     public ResponseEntity<SuccessResponse> updateOrderStatus(
             @PathVariable String orderId,
             @RequestBody UpdateOrderStatusRequest request) {

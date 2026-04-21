@@ -1,6 +1,7 @@
 package com.isysnap.security;
 
 import com.isysnap.context.RestaurantContext;
+import com.isysnap.entity.User;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +24,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRevocationCache tokenRevocationCache;
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -36,31 +38,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = extractJwtFromRequest(request);
 
             if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
-                String userId = jwtTokenProvider.getUserIdFromToken(jwt);
-                String role = jwtTokenProvider.getRoleFromToken(jwt);
-                String restaurantId = jwtTokenProvider.getRestaurantIdFromToken(jwt);
 
-                // Set restaurant context for multi-tenancy isolation
-                if (restaurantId != null) {
-                    RestaurantContext.setRestaurantId(restaurantId);
+                // Reject tokens that have been revoked (e.g. after logout)
+                if (!tokenRevocationCache.isRevoked(jwt)) {
+                    String userId = jwtTokenProvider.getUserIdFromToken(jwt);
+                    String role = jwtTokenProvider.getRoleFromToken(jwt);
+                    String restaurantId = jwtTokenProvider.getRestaurantIdFromToken(jwt);
+
+                    // Set restaurant context for multi-tenancy isolation
+                    if (restaurantId != null) {
+                        RestaurantContext.setRestaurantId(restaurantId);
+                    }
+
+                    // Build full authority list from role (ROLE_X + all granular permissions)
+                    User.UserRole userRole = User.UserRole.valueOf(role);
+                    List<SimpleGrantedAuthority> authorities = userRole.getAuthorities();
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userId, null, authorities);
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.info("JWT authentication set for user: {} with role: {} ({} authorities), restaurantId: {}",
+                            userId, role, authorities.size(), restaurantId);
+                } else {
+                    log.warn("Rejected revoked token for request: {}", request.getRequestURI());
                 }
-
-                // Crea authentication token
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userId,
-                                null,
-                                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("JWT authentication set for user: {} with role: {} (authority: ROLE_{}), restaurantId: {}",
-                        userId, role, role, restaurantId);
             }
         } catch (Exception ex) {
             log.debug("Could not set user authentication in security context", ex);
         } finally {
-            // Clean up RestaurantContext to avoid ThreadLocal leaks
             filterChain.doFilter(request, response);
             RestaurantContext.clear();
         }

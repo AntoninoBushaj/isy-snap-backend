@@ -45,28 +45,28 @@ public class SessionController {
     }
 
     @PatchMapping("/closeSession/{sessionId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasAuthority('session:update')")
     public ResponseEntity<SuccessResponse> closeSession(@PathVariable String sessionId) {
         sessionService.closeSession(sessionId);
         return ResponseEntity.ok(SuccessResponse.of(true));
     }
 
     @DeleteMapping("/deleteSession/{sessionId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasAuthority('session:delete')")
     public ResponseEntity<SuccessResponse> deleteSession(@PathVariable String sessionId) {
         sessionService.deleteSession(sessionId);
         return ResponseEntity.ok(SuccessResponse.of(true));
     }
 
     @GetMapping("/getRestaurantSessions/{restaurantId}")
-    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
+    @PreAuthorize("hasAuthority('session:read') and @restaurantAccessValidator.hasAccessToRestaurant(#restaurantId)")
     public ResponseEntity<List<SessionInfoResponse>> getRestaurantSessions(@PathVariable String restaurantId) {
         List<SessionInfoResponse> sessions = sessionService.getSessionsByRestaurant(restaurantId);
         return ResponseEntity.ok(sessions);
     }
 
     @GetMapping("/getAllActiveSessions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('session:read') and hasAuthority('user:read')")
     public ResponseEntity<List<SessionInfoResponse>> getAllActiveSessions() {
         List<SessionInfoResponse> sessions = sessionService.getAllActiveSessions();
         return ResponseEntity.ok(sessions);

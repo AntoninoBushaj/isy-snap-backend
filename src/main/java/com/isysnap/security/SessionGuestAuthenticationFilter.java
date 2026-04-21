@@ -8,10 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Authentication filter for guest session JWT tokens.
@@ -41,6 +45,19 @@ public class SessionGuestAuthenticationFilter extends OncePerRequestFilter {
                     if (claims != null) {
                         // Store claims in ThreadLocal context for this request
                         SessionAuthContext.setSession(claims);
+
+                        // Set Spring Security authentication with ROLE_GUEST so that
+                        // guest endpoints can use hasRole('GUEST') instead of permitAll()
+                        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                            UsernamePasswordAuthenticationToken guestAuth =
+                                    new UsernamePasswordAuthenticationToken(
+                                            claims.getGuestId(),
+                                            null,
+                                            List.of(new SimpleGrantedAuthority("ROLE_GUEST"))
+                                    );
+                            SecurityContextHolder.getContext().setAuthentication(guestAuth);
+                        }
+
                         log.debug("Session JWT validated for guest: {}, session: {}",
                                 claims.getGuestId(), claims.getSessionId());
                     }
@@ -83,7 +100,6 @@ public class SessionGuestAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/api/auth/") ||
                path.startsWith("/api/qr/authorizeQr") ||
                path.startsWith("/swagger-ui") ||
-               path.startsWith("/v3/api-docs") ||
-               path.startsWith("/api/dev/");
+               path.startsWith("/v3/api-docs");
     }
 }
