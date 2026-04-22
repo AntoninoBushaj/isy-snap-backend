@@ -2,6 +2,7 @@ package com.isysnap.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +24,8 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank(message = "Role is required")
-    private String role; // ADMIN, STAFF, CUSTOMER
+    @Pattern(regexp = "^(ADMIN|STAFF|CUSTOMER)$", message = "Role must be ADMIN, STAFF, or CUSTOMER")
+    private String role;
 
     // Optional fields - can be provided during registration or updated later
     private String firstName;

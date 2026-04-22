@@ -14,6 +14,7 @@ import com.isysnap.service.DiningSessionService;
 import com.isysnap.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class OrderController {
 
     @PostMapping("/addItemToCart")
     @Operation(summary = "Add item to cart", description = "Add item to cart using guest ID from JWT")
-    public ResponseEntity<AddItemResponse> addItemToCart(@RequestBody AddItemRequest request) {
+    public ResponseEntity<AddItemResponse> addItemToCart(@Valid @RequestBody AddItemRequest request) {
         // Get guest ID and session ID from JWT (populated by SessionGuestAuthenticationFilter)
         String guestId = SessionAuthContext.getGuestId();
         com.isysnap.dto.SessionTokenClaims claims = SessionAuthContext.getSession();
@@ -81,7 +82,7 @@ public class OrderController {
     @Operation(summary = "Update cart item", description = "Update quantity or remove item")
     public ResponseEntity<SuccessResponse> updateCartItem(
             @PathVariable String orderItemId,
-            @RequestBody UpdateItemRequest request) {
+            @Valid @RequestBody UpdateItemRequest request) {
 
         log.info("Updating cart item: {} to quantity: {}", orderItemId, request.getQuantity());
 
@@ -244,7 +245,7 @@ public class OrderController {
     @Operation(summary = "Update order status", description = "STAFF/ADMIN: Mark order as PREPARING, READY, etc.")
     public ResponseEntity<SuccessResponse> updateOrderStatus(
             @PathVariable String orderId,
-            @RequestBody UpdateOrderStatusRequest request) {
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
 
         log.info("Updating order {} status to: {}", orderId, request.getStatus());
 

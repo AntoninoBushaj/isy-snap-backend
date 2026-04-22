@@ -7,6 +7,7 @@ import com.isysnap.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,7 +54,7 @@ public class UserController {
     )
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable String userId,
-            @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(userId, request));
     }
 

@@ -3,6 +3,7 @@ package com.isysnap.exception;
 import com.isysnap.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -127,6 +128,20 @@ public class GlobalExceptionHandler {
                 .error("Validation failed")
                 .errorCode("VALIDATION_ERROR")
                 .details(details)
+                .timestamp(Instant.now())
+                .path(request.getDescription(false).replace("uri=", ""))
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            WebRequest request
+    ) {
+        ErrorResponse error = ErrorResponse.builder()
+                .error("Request body is missing or malformed JSON")
+                .errorCode("MALFORMED_REQUEST")
                 .timestamp(Instant.now())
                 .path(request.getDescription(false).replace("uri=", ""))
                 .build();

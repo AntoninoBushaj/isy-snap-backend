@@ -11,6 +11,7 @@ import com.isysnap.service.OrderService;
 import com.isysnap.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class PaymentController {
 
     @PostMapping("/createCheckout")
     @Operation(summary = "Checkout cart", description = "Creates payment for entire PENDING order")
-    public ResponseEntity<CheckoutResponse> createCheckout(@RequestBody CheckoutRequest request) {
+    public ResponseEntity<CheckoutResponse> createCheckout(@Valid @RequestBody CheckoutRequest request) {
         // Get guest ID from JWT
         String guestId = com.isysnap.security.SessionAuthContext.getGuestId();
         com.isysnap.dto.SessionTokenClaims claims = com.isysnap.security.SessionAuthContext.getSession();

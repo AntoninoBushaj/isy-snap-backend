@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +56,7 @@ public class MenuController {
     @PostMapping("/createMenuItem")
     @PreAuthorize("hasAuthority('menu:create')")
     @Operation(summary = "Create menu item", description = "STAFF/ADMIN: Add new menu item")
-    public ResponseEntity<MenuItemDTO> createMenuItem(@RequestBody CreateMenuItemRequest request) {
+    public ResponseEntity<MenuItemDTO> createMenuItem(@Valid @RequestBody CreateMenuItemRequest request) {
         MenuItemDTO menuItem = menuService.createMenuItem(request);
         return ResponseEntity.ok(menuItem);
     }
@@ -65,7 +66,7 @@ public class MenuController {
     @Operation(summary = "Update menu item", description = "STAFF/ADMIN: Update menu item details")
     public ResponseEntity<MenuItemDTO> updateMenuItem(
             @PathVariable String itemId,
-            @RequestBody UpdateMenuItemRequest request) {
+            @Valid @RequestBody UpdateMenuItemRequest request) {
 
         MenuItemDTO menuItem = menuService.updateMenuItem(itemId, request);
         return ResponseEntity.ok(menuItem);
@@ -76,7 +77,7 @@ public class MenuController {
     @Operation(summary = "Update item availability", description = "STAFF/ADMIN: Toggle menu item availability")
     public ResponseEntity<SuccessResponse> updateAvailability(
             @PathVariable String itemId,
-            @RequestBody UpdateAvailabilityRequest request) {
+            @Valid @RequestBody UpdateAvailabilityRequest request) {
 
         menuService.updateMenuItemAvailability(itemId, request.getAvailable());
         return ResponseEntity.ok(SuccessResponse.of(true));

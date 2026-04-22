@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -44,7 +45,7 @@ public class RestaurantController {
     @PostMapping("/createRestaurant")
     @PreAuthorize("hasAuthority('restaurant:create')")
     @Operation(summary = "Create restaurant", description = "ADMIN: Create new restaurant")
-    public ResponseEntity<RestaurantDTO> createRestaurant(@RequestBody CreateRestaurantRequest request) {
+    public ResponseEntity<RestaurantDTO> createRestaurant(@Valid @RequestBody CreateRestaurantRequest request) {
         RestaurantDTO restaurant = restaurantService.createRestaurant(request);
         return ResponseEntity.ok(restaurant);
     }
@@ -54,7 +55,7 @@ public class RestaurantController {
     @Operation(summary = "Update restaurant", description = "STAFF/ADMIN: Update restaurant details")
     public ResponseEntity<RestaurantDTO> updateRestaurant(
             @PathVariable String restaurantId,
-            @RequestBody UpdateRestaurantRequest request) {
+            @Valid @RequestBody UpdateRestaurantRequest request) {
 
         RestaurantDTO restaurant = restaurantService.updateRestaurant(restaurantId, request);
         return ResponseEntity.ok(restaurant);
@@ -73,7 +74,7 @@ public class RestaurantController {
     @Operation(summary = "Create table", description = "STAFF/ADMIN: Add new table to restaurant")
     public ResponseEntity<TableDTO> createTable(
             @PathVariable String restaurantId,
-            @RequestBody CreateTableRequest request) {
+            @Valid @RequestBody CreateTableRequest request) {
 
         TableDTO table = restaurantService.createTable(restaurantId, request);
         return ResponseEntity.ok(table);

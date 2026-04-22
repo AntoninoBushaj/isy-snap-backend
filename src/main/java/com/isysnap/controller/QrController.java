@@ -12,6 +12,7 @@ import com.isysnap.security.SessionTokenProvider;
 import com.isysnap.service.DiningSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,7 +43,7 @@ public class QrController {
 
     @PostMapping("/authorizeQr")
     @Operation(summary = "Authorize QR code", description = "Validates scanned QR code and returns session token")
-    public ResponseEntity<QrAuthorizeResponse> authorizeQr(@RequestBody QrAuthorizeRequest request) {
+    public ResponseEntity<QrAuthorizeResponse> authorizeQr(@Valid @RequestBody QrAuthorizeRequest request) {
         log.info("QR authorization request for slug: {}", request.getQrSlug());
 
         // 1. Validate timestamp (freshness check)
